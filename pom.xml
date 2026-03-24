@@ -56,6 +56,24 @@
 			<artifactId>spring-boot-starter-webmvc-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
+		<dependency>
+			<groupId>io.valkey</groupId>
+			<artifactId>valkey-java</artifactId>
+			<version>5.4.0</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.example</groupId>
+			<artifactId>spring-valkey-poc</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-redis</artifactId>
+		</dependency>
+
 	</dependencies>
 
 	<build>

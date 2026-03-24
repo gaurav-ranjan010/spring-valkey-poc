@@ -30,13 +30,13 @@ public class UserController {
         return ResponseEntity.ok(baseResponse);
     }
 
-    @GetMapping("/{name}")
-    public ResponseEntity<BaseResponse<List<UserDetailsResponse>>> getUsersByName(@PathVariable("name") String name){
+    @GetMapping("/{id}")
+    public ResponseEntity<BaseResponse<UserDetailsResponse>> getUsersByName(@PathVariable("id") long id){
 
-         List<UserDetailsResponse> userDetailsResponseList = userService.fetchUserByName(name);
+         UserDetailsResponse userDetailsResponse = userService.fetchUserById(id);
 
-        BaseResponse<List<UserDetailsResponse>> baseResponse = BaseResponse.<List<UserDetailsResponse>>builder()
-                                                                     .data(userDetailsResponseList)
+        BaseResponse<UserDetailsResponse> baseResponse = BaseResponse.<UserDetailsResponse>builder()
+                                                                     .data(userDetailsResponse)
                                                                      .success(true)
                                                                      .build();
         return ResponseEntity.ok(baseResponse);

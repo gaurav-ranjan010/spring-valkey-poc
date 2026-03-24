@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Table
@@ -14,7 +15,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Builder
 @Data
-public class UserEntity {
+public class UserEntity implements Serializable {
 
     @Id
     @Column(name = "id")
