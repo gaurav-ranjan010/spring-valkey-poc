@@ -17,3 +17,5 @@ spring:
 valkey:
   host: localhost
   port: 6379
+  lock:
+    lease-time-ms: 5000

@@ -1,15 +1,14 @@
 package com.example.spring_valkey_poc.cache.repository;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 
 import java.time.Duration;
 import java.util.*;
 
+@Slf4j
 public abstract class AbstractCacheRepository<T, ID> implements CacheRepository<T, ID> {
 
-    private static final Logger log = LoggerFactory.getLogger(AbstractCacheRepository.class);
 
     protected final RedisTemplate<String, Object> redisTemplate;
     protected final String cachePrefix;
@@ -29,7 +28,11 @@ public abstract class AbstractCacheRepository<T, ID> implements CacheRepository<
 
     @Override
     public T save(ID id, T entity) {
-        redisTemplate.opsForValue().set(buildKey(id), entity, ttl);
+        try {
+            redisTemplate.opsForValue().set(buildKey(id), entity, ttl);
+        } catch (Exception e) {
+            log.warn("Failed to write cache key '{}': {}", buildKey(id), e.getMessage());
+        }
         return entity;
     }
 
@@ -50,35 +53,49 @@ public abstract class AbstractCacheRepository<T, ID> implements CacheRepository<
     @Override
     @SuppressWarnings("unchecked")
     public List<T> findAll() {
-        Set<String> keys = redisTemplate.keys(cachePrefix + "::*");
-        if (keys == null || keys.isEmpty()) return Collections.emptyList();
+        try {
+            Set<String> keys = redisTemplate.keys(cachePrefix + "::*");
+            if (keys == null || keys.isEmpty()) return Collections.emptyList();
 
-        List<Object> values = redisTemplate.opsForValue().multiGet(keys);
-        if (values == null) return Collections.emptyList();
+            List<Object> values = redisTemplate.opsForValue().multiGet(keys);
+            if (values == null) return Collections.emptyList();
 
-        List<T> result = new ArrayList<>();
-        Iterator<String> keyIterator = keys.iterator();
-        for (Object value : values) {
-            String key = keyIterator.hasNext() ? keyIterator.next() : null;
-            if (value == null) continue;
-            try {
-                result.add((T) value);
-            } catch (Exception e) {
-                log.warn("Stale or corrupt cache entry for key '{}'. Evicting. Reason: {}", key, e.getMessage());
-                if (key != null) redisTemplate.delete(key);
+            List<T> result = new ArrayList<>();
+            Iterator<String> keyIterator = keys.iterator();
+            for (Object value : values) {
+                String key = keyIterator.hasNext() ? keyIterator.next() : null;
+                if (value == null) continue;
+                try {
+                    result.add((T) value);
+                } catch (Exception e) {
+                    log.warn("Stale or corrupt cache entry for key '{}'. Evicting. Reason: {}", key, e.getMessage());
+                    if (key != null) redisTemplate.delete(key);
+                }
             }
+            return result;
+        } catch (Exception e) {
+            log.warn("Failed to fetch all cache entries for prefix '{}': {}", cachePrefix, e.getMessage());
+            return Collections.emptyList();
         }
-        return result;
     }
 
     @Override
     public boolean existsById(ID id) {
-        return Boolean.TRUE.equals(redisTemplate.hasKey(buildKey(id)));
+        try {
+            return Boolean.TRUE.equals(redisTemplate.hasKey(buildKey(id)));
+        } catch (Exception e) {
+            log.warn("Failed to check existence of cache key '{}': {}", buildKey(id), e.getMessage());
+            return false;
+        }
     }
 
     @Override
     public void deleteById(ID id) {
-        redisTemplate.delete(buildKey(id));
+        try {
+            redisTemplate.delete(buildKey(id));
+        } catch (Exception e) {
+            log.warn("Failed to delete cache key '{}': {}", buildKey(id), e.getMessage());
+        }
     }
 
     /**
@@ -95,15 +112,24 @@ public abstract class AbstractCacheRepository<T, ID> implements CacheRepository<
 
     @Override
     public void deleteAll() {
-        Set<String> keys = redisTemplate.keys(cachePrefix + "::*");
-        if (keys != null && !keys.isEmpty()) {
-            redisTemplate.delete(keys);
+        try {
+            Set<String> keys = redisTemplate.keys(cachePrefix + "::*");
+            if (keys != null && !keys.isEmpty()) {
+                redisTemplate.delete(keys);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to delete all cache entries for prefix '{}': {}", cachePrefix, e.getMessage());
         }
     }
 
     @Override
     public long count() {
-        Set<String> keys = redisTemplate.keys(cachePrefix + "::*");
-        return keys == null ? 0 : keys.size();
+        try {
+            Set<String> keys = redisTemplate.keys(cachePrefix + "::*");
+            return keys == null ? 0 : keys.size();
+        } catch (Exception e) {
+            log.warn("Failed to count cache entries for prefix '{}': {}", cachePrefix, e.getMessage());
+            return 0;
+        }
     }
 }

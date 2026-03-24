@@ -8,8 +8,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/users")
@@ -39,6 +37,21 @@ public class UserController {
                                                                      .data(userDetailsResponse)
                                                                      .success(true)
                                                                      .build();
+        return ResponseEntity.ok(baseResponse);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<BaseResponse<UserDetailsResponse>> updateUser(
+            @PathVariable("id") long id,
+            @RequestBody UserDetailsRequest userDetailsRequest) {
+
+        UserDetailsResponse userDetailsResponse = userService.updateUser(id, userDetailsRequest);
+
+        BaseResponse<UserDetailsResponse> baseResponse = BaseResponse.<UserDetailsResponse>builder()
+                .data(userDetailsResponse)
+                .success(true)
+                .build();
+
         return ResponseEntity.ok(baseResponse);
     }
 }
