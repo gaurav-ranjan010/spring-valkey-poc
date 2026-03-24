@@ -24,7 +24,6 @@ import java.util.Collections;
 public class ValkeyDistributedLockServiceImpl implements DistributedLockService {
 
     private final RedisTemplate<String, Object> redisTemplate;
-
     private final long leaseTimeMs;
 
     private static final String RELEASE_LOCK_LUA =
@@ -33,7 +32,6 @@ public class ValkeyDistributedLockServiceImpl implements DistributedLockService 
                     "else " +
                     "return 0 " +
                     "end";
-
     private static final DefaultRedisScript<Long> RELEASE_LOCK_SCRIPT =
             new DefaultRedisScript<>(RELEASE_LOCK_LUA, Long.class);
 

@@ -25,7 +25,6 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
 
     private final UserDetailsCacheService userDetailsCacheService;
-
     private final DistributedLockService distributedLockService;
 
     private static final String UPDATE_USER_LOCK_PREFIX = "lock:user:update:";
