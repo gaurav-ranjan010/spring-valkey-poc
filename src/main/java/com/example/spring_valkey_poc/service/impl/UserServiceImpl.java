@@ -11,11 +11,11 @@ import com.example.spring_valkey_poc.repository.UserRepository;
 import com.example.spring_valkey_poc.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -30,29 +30,27 @@ public class UserServiceImpl implements UserService {
 
     private static final String UPDATE_USER_LOCK_PREFIX = "lock:user:update:";
 
-    @Value("${valkey.lock.wait-time-ms:3000}")
-    private long lockWaitTimeMs;
-
-    @Value("${valkey.lock.lease-time-ms:5000}")
-    private long lockLeaseTimeMs;
-
     @Override
     public UserDetailsResponse fetchUserById(long id) {
         log.info("Received request to fetch user details for id : {}", id);
+        try {
+            Optional<UserEntity> cached = userDetailsCacheService.findById(id);
+            if (cached.isPresent()) {
+                log.info("Cache hit for id : {}", id);
+                return buildUserDetailsResponse(cached.get());
+            }
 
-        Optional<UserEntity> cached = userDetailsCacheService.findById(id);
-        if (cached.isPresent()) {
-            log.info("Cache hit for id : {}", id);
-            return buildUserDetailsResponse(cached.get());
+            log.info("Cache miss for id : {}. Fetching from DB.", id);
+            UserEntity userEntity = userRepository.findById(id)
+                    .orElseThrow(() -> new GlobalException(ErrorCodes.USER_NOT_FOUND));
+
+            userDetailsCacheService.save(userEntity);
+            log.info("Saved id : {} in cache", id);
+            return buildUserDetailsResponse(userEntity);
+        } catch (Exception e) {
+            log.error("Unable to fetch user details for id : {}. Exception : {}", id, e.getMessage());
+            throw new GlobalException(ErrorCodes.USER_NOT_FOUND);
         }
-
-        log.info("Cache miss for id : {}. Fetching from DB.", id);
-        UserEntity userEntity = userRepository.findById(id)
-                .orElseThrow(() -> new GlobalException(ErrorCodes.USER_NOT_FOUND));
-
-        userDetailsCacheService.save(userEntity);
-        log.info("Saved id : {} in cache", id);
-        return buildUserDetailsResponse(userEntity);
     }
 
     @Override
@@ -76,10 +74,11 @@ public class UserServiceImpl implements UserService {
     public UserDetailsResponse updateUser(long id, UserDetailsRequest userDetailsRequest) {
         log.info("Received request to update user id : {} with details : {}", id, userDetailsRequest);
 
-        String lockKey   = UPDATE_USER_LOCK_PREFIX + id;
-        String lockValue = distributedLockService.acquireLock(lockKey, lockWaitTimeMs, lockLeaseTimeMs);
+        String lockKey = UPDATE_USER_LOCK_PREFIX + id;
+        String lockValue = UUID.randomUUID().toString();
+        boolean isAcquired = distributedLockService.acquireLock(lockKey, lockValue);
 
-        if (lockValue == null) {
+        if (!isAcquired) {
             log.error("Failed to acquire lock for updating user id : {}", id);
             throw new GlobalException(ErrorCodes.LOCK_ACQUISITION_FAILED);
         }
@@ -96,9 +95,6 @@ public class UserServiceImpl implements UserService {
             userDetailsCacheService.save(userEntity);
 
             return buildUserDetailsResponse(userEntity);
-
-        } catch (GlobalException ge) {
-            throw ge;
         } catch (Exception exception) {
             log.error("Unable to update user id : {}. Exception : {}", id, exception.getMessage());
             throw new GlobalException(ErrorCodes.UNABLE_TO_UPDATE_USER);
