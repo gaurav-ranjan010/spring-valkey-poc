@@ -8,4 +8,6 @@ public interface UserService {
     UserDetailsResponse fetchUserById(long id);
 
     UserDetailsResponse addUser(UserDetailsRequest userDetailsRequest);
+
+    UserDetailsResponse updateUser(long id, UserDetailsRequest userDetailsRequest);
 }
