@@ -40,12 +40,16 @@ public class UserServiceImpl implements UserService {
             }
 
             log.info("Cache miss for id : {}. Fetching from DB.", id);
-            UserEntity userEntity = userRepository.findById(id)
-                    .orElseThrow(() -> new GlobalException(ErrorCodes.USER_NOT_FOUND));
+            Optional<UserEntity> userEntityOptional = userRepository.findById(id);
 
-            userDetailsCacheService.save(userEntity);
+            if(userEntityOptional.isEmpty()){
+                log.error("User not found in DB for id : {}", id);
+                throw new GlobalException(ErrorCodes.USER_NOT_FOUND);
+            }
+
+            userDetailsCacheService.save(userEntityOptional.get());
             log.info("Saved id : {} in cache", id);
-            return buildUserDetailsResponse(userEntity);
+            return buildUserDetailsResponse(userEntityOptional.get());
         } catch (Exception e) {
             log.error("Unable to fetch user details for id : {}. Exception : {}", id, e.getMessage());
             throw new GlobalException(ErrorCodes.USER_NOT_FOUND);
@@ -73,7 +77,7 @@ public class UserServiceImpl implements UserService {
     public UserDetailsResponse updateUser(long id, UserDetailsRequest userDetailsRequest) {
         log.info("Received request to update user id : {} with details : {}", id, userDetailsRequest);
 
-        String lockKey = UPDATE_USER_LOCK_PREFIX + id;
+        String lockKey = String.format("%s%d", UPDATE_USER_LOCK_PREFIX, id);
         String lockValue = UUID.randomUUID().toString();
         boolean isAcquired = distributedLockService.acquireLock(lockKey, lockValue);
 
@@ -83,11 +87,14 @@ public class UserServiceImpl implements UserService {
         }
 
         try {
-            UserEntity userEntity = userRepository.findById(id)
-                    .orElseThrow(() -> new GlobalException(ErrorCodes.USER_NOT_FOUND));
-            updateUserEntity(userDetailsRequest, userEntity);
+            Optional<UserEntity> userEntityOptional = userRepository.findById(id);
+            if (userEntityOptional.isEmpty()) {
+                log.error("User not found in DB for id : {}", id);
+                throw new GlobalException(ErrorCodes.USER_NOT_FOUND);
+            }
+            updateUserEntity(userDetailsRequest, userEntityOptional.get());
 
-            userEntity = userRepository.save(userEntity);
+            UserEntity userEntity = userRepository.save(userEntityOptional.get());
             log.info("User id : {} updated successfully", id);
 
             // keep cache consistent

@@ -1,6 +1,7 @@
 package com.example.spring_valkey_poc.lock.impl;
 
 import com.example.spring_valkey_poc.lock.DistributedLockService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -21,10 +22,13 @@ import java.util.Collections;
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class ValkeyDistributedLockServiceImpl implements DistributedLockService {
 
     private final RedisTemplate<String, Object> redisTemplate;
-    private final long leaseTimeMs;
+
+    @Value("${valkey.lock.lease-time-ms:5000}")
+    private long leaseTimeMs;
 
     private static final String RELEASE_LOCK_LUA =
             "if redis.call('get', KEYS[1]) == ARGV[1] then " +
@@ -35,12 +39,6 @@ public class ValkeyDistributedLockServiceImpl implements DistributedLockService 
     private static final DefaultRedisScript<Long> RELEASE_LOCK_SCRIPT =
             new DefaultRedisScript<>(RELEASE_LOCK_LUA, Long.class);
 
-    public ValkeyDistributedLockServiceImpl(
-            RedisTemplate<String, Object> redisTemplate,
-            @Value("${valkey.lock.lease-time-ms:5000}") long leaseTimeMs) {
-        this.redisTemplate = redisTemplate;
-        this.leaseTimeMs = leaseTimeMs;
-    }
 
     @Override
     public boolean acquireLock(String lockKey, String lockValue) {

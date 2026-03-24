@@ -1,15 +1,14 @@
 package com.example.spring_valkey_poc.cache.repository;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 
 import java.time.Duration;
 import java.util.*;
 
+@Slf4j
 public abstract class AbstractCacheRepository<T, ID> implements CacheRepository<T, ID> {
 
-    private static final Logger log = LoggerFactory.getLogger(AbstractCacheRepository.class);
 
     protected final RedisTemplate<String, Object> redisTemplate;
     protected final String cachePrefix;
