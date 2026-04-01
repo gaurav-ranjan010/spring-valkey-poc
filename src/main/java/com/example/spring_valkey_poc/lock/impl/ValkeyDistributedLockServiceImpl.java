@@ -36,6 +36,7 @@ public class ValkeyDistributedLockServiceImpl implements DistributedLockService 
                     "else " +
                     "return 0 " +
                     "end";
+
     private static final DefaultRedisScript<Long> RELEASE_LOCK_SCRIPT =
             new DefaultRedisScript<>(RELEASE_LOCK_LUA, Long.class);
 
