@@ -36,6 +36,7 @@ public class ValkeyDistributedLockServiceImpl implements DistributedLockService 
                     "else " +
                     "return 0 " +
                     "end";
+
     private static final DefaultRedisScript<Long> RELEASE_LOCK_SCRIPT =
             new DefaultRedisScript<>(RELEASE_LOCK_LUA, Long.class);
 
@@ -50,7 +51,7 @@ public class ValkeyDistributedLockServiceImpl implements DistributedLockService 
                 log.info("Lock '{}' acquired", lockKey);
                 return true;
             }
-            log.warn("Failed to acquire lock '{}'", lockKey);
+            log.warn("Failed to acquire distributed lock '{}'", lockKey);
             return false;
         } catch (Exception e) {
             log.error("Error while acquiring lock '{}': {}", lockKey, e.getMessage());

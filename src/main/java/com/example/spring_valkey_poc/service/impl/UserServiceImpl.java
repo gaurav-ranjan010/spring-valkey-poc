@@ -101,6 +101,8 @@ public class UserServiceImpl implements UserService {
             userDetailsCacheService.save(userEntity);
 
             return buildUserDetailsResponse(userEntity);
+        } catch (GlobalException ge) {
+            throw ge;
         } catch (Exception exception) {
             log.error("Unable to update user id : {}. Exception : {}", id, exception.getMessage());
             throw new GlobalException(ErrorCodes.UNABLE_TO_UPDATE_USER);
