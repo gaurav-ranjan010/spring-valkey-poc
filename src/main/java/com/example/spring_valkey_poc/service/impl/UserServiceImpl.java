@@ -35,7 +35,7 @@ public class UserServiceImpl implements UserService {
         try {
             Optional<UserEntity> cached = userDetailsCacheService.findById(id);
             if (cached.isPresent()) {
-                log.info("Cache hit for id : {}", id);
+                log.info("Cache hit for id success: {}", id);
                 return buildUserDetailsResponse(cached.get());
             }
 
@@ -50,6 +50,8 @@ public class UserServiceImpl implements UserService {
             userDetailsCacheService.save(userEntityOptional.get());
             log.info("Saved id : {} in cache", id);
             return buildUserDetailsResponse(userEntityOptional.get());
+        } catch (GlobalException ge) {
+            throw ge;
         } catch (Exception e) {
             log.error("Unable to fetch user details for id : {}. Exception : {}", id, e.getMessage());
             throw new GlobalException(ErrorCodes.USER_NOT_FOUND);
